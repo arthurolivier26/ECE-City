@@ -1,0 +1,58 @@
+#include "header_init.h"
+
+
+void alleg_init()
+{
+    allegro_init();
+    install_keyboard();
+    install_mouse();
+    set_color_depth(desktop_color_depth());
+    if((set_gfx_mode(GFX_AUTODETECT_WINDOWED,W,H,0,0))!=0)
+    {
+        allegro_message("Pb de mode graphique") ;
+        allegro_exit();
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void init_file_affichage(t_file_element_a* file)
+{
+
+    file->tete = NULL;
+    file->queue= NULL;
+    file->taille = 0;
+    file->x = 0;
+    file->y = 0;
+    file->zoom =1;
+}
+
+t_plateau* init_plateau()
+{
+
+    t_plateau* plateau = (t_plateau*)malloc(sizeof(t_plateau));
+    plateau->taille_carreau=TAILLE_CARREAU;
+    plateau->carreaux = (t_carreau**)malloc(NB_CARREAU_X*sizeof(t_carreau*));
+
+    for(int i=0;i<NB_CARREAU_X;i++)
+    {
+        plateau->carreaux[i] = (t_carreau*)malloc(NB_CARREAU_Y*sizeof(t_carreau));
+    }
+
+    return plateau;
+
+}
+
+
+void init_stat(t_stat* stat)
+{
+    stat->bouton1=0;
+    stat->bouton2=0;
+}
+
+
+
+
+//
+// Created by User on 24/10/2022.
+//
