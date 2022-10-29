@@ -1,0 +1,422 @@
+#include "header_init.h"
+
+
+
+
+
+
+
+
+
+BITMAP* redimentioner(BITMAP* image,int x ,int y)
+{
+    BITMAP* b = create_bitmap(x,y);
+    BITMAP* a = image;
+    stretch_blit(a, b, 0, 0, a->w, a->h, 0, 0, b->w, b->h);
+    return b;
+}
+
+
+
+
+
+
+
+
+
+t_element_affichage* creer_element_a(BITMAP* btm,int x,int y,int ordre,int zoom,int forme,t_forme* forme_struct,int pop,t_popup* popup)
+{
+    t_element_affichage* temp = (t_element_affichage*)malloc(sizeof(t_element_affichage));
+    temp->y = y;
+    temp->x = x;
+    temp->element=btm;
+    temp->ordre=ordre;
+    temp->suivant=NULL;
+    temp->zoom = zoom;
+    temp->forme = forme;
+    if(pop==1)
+    {
+        temp->popup_st=1;
+        temp->popup = popup;
+    }
+    else
+    {
+        temp->popup_st=0;
+        temp->popup = NULL;
+    }
+
+
+
+
+    if(forme==1)
+    {
+        temp->forme_struct = forme_struct;
+    }
+    else{
+        temp->forme_struct=NULL;
+    }
+
+    return temp;
+}
+
+
+
+
+
+
+
+
+
+void enfiler_element_a(t_element_affichage* maillon,t_file_element_a* file)
+{
+    if(file->taille==0)
+    {
+        file->tete=maillon;
+        file->queue=maillon;
+    }
+    else
+    {
+        file->tete->suivant=maillon;
+        file->tete=maillon;
+    }
+    file->taille++;
+}
+
+
+
+
+
+
+
+
+t_element_affichage* defiler_element_a(t_file_element_a* file)
+{
+
+    t_element_affichage* temp = (t_element_affichage*)malloc(sizeof(t_element_affichage));
+    temp = file->queue;
+    file->queue=temp->suivant;
+    file->taille--;
+    return temp;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+void trie_file(t_file_element_a* file)
+{
+
+    t_element_affichage* temp1;
+    int cpt;
+    int taille = file->taille;
+    temp1=file->queue;
+
+
+    t_element_affichage** temptab = (t_element_affichage**)malloc(taille*sizeof(t_file_element_a*));
+    for(int i=0;i<taille;i++)
+    {
+        temptab[i] = defiler_element_a(file);
+    }
+
+    do
+    {
+        cpt = 0;
+        for(int i=0;i<taille-1;i++)
+        {
+            if(temptab[i]->ordre>temptab[i+1]->ordre)
+            {
+                temp1 = temptab[i];
+                temptab[i] = temptab[i+1];
+                temptab[i+1]=temp1;
+                cpt++;
+            }
+        }
+    }while(cpt!=0);
+
+    for(int i=0;i<taille;i++)
+    {
+        enfiler_element_a(temptab[i],file);
+    }
+
+
+
+    free(temp1);
+    free(temptab);
+
+
+}
+
+
+
+
+
+
+
+
+void afficher(t_file_element_a* file,BITMAP* btm,int x, int y,int ordre)
+{
+    t_element_affichage* temp = creer_element_a(btm,x,y,ordre,1,0,NULL,0,0);
+    enfiler_element_a(temp,file);
+}
+
+
+
+
+
+
+
+
+void affi_file(t_plateau* plateau,t_stat* statut,t_file_element_a* file,BITMAP* buffer,int i)
+{
+    if(key[KEY_UP]&&file->zoom<3)
+    {
+        while(key[KEY_UP])
+        {}
+        file->zoom++;
+
+    }
+    if(key[KEY_DOWN]&&file->zoom>1)
+    {
+        while(key[KEY_DOWN])
+        {}
+        file->zoom--;
+
+    }
+
+    int taille = file->taille;
+    if(taille>1)trie_file(file);
+    int x_marge = 0;
+    int y_marge = 0;
+
+    if(file->zoom>1&&file->zoom<=3)
+    {
+        plateau->taille_carreau*=file->zoom;
+        x_marge = (NB_CARREAU_X*plateau->taille_carreau-NB_CARREAU_X*TAILLE_CARREAU)/2;
+        y_marge = (NB_CARREAU_Y*plateau->taille_carreau-NB_CARREAU_Y*TAILLE_CARREAU)/2;
+
+    }
+
+    if(key[KEY_D]&&file->x<=x_marge)
+    {
+        file->x+=10;
+
+    }
+    if(key[KEY_A]&&file->x<x_marge)
+    {
+        file->x-=10;
+
+    }
+    if(key[KEY_S]&&file->y<y_marge)
+    {
+        file->y+=10;
+    }
+    if(key[KEY_W]&&(-y_marge)<file->y)
+    {
+        file->y-=10;
+    }
+    if(file->x>x_marge)file->x=x_marge-1;
+    if(file->x<-x_marge)file->x=-x_marge+1;
+    if(file->y>y_marge)file->y=y_marge-1;
+    if(file->y<-y_marge)file->y=-y_marge+1;
+
+    blit(buffer, screen, 0, 0, 0, 0, buffer->w, buffer->h);
+    clear(buffer);
+
+    for(int c = 0;c<taille;c++)
+    {
+
+
+        t_element_affichage* temp = defiler_element_a(file);
+
+
+        if(temp->forme==1&&temp->forme_struct!=NULL)
+        {
+            t_forme* forme_struct = temp->forme_struct;
+            int nr,ng,nb;
+            int x = forme_struct->x1;
+            int x2 = forme_struct->x2;
+            int y = forme_struct->y1;
+            int y2 = forme_struct->y2;
+            int r = forme_struct->r;
+            int g = forme_struct->g;
+            int b = forme_struct->b;
+            int x_text = forme_struct->x_text;
+            if(temp->popup_st==1)
+            {
+
+                if(i - temp->popup->temps_init<temp->popup->temps/4.0)forme_struct->opacite = (float)(i - temp->popup->temps_init)/(float)(temp->popup->temps/4);
+                else if(i-temp->popup->temps_init>3.0*temp->popup->temps/4.0)forme_struct->opacite = (float)1.0/(float)((i - temp->popup->temps_init)-(3.0*temp->popup->temps)/4.0);
+                else forme_struct->opacite=1.0;
+
+            }
+            for(int i = x; i<=x2; i++)
+            {
+                for(int j=y; j<=y2; j++)
+                {
+                    nr = ((1.0-forme_struct->opacite)*getr(getpixel(buffer,i,j)))+forme_struct->opacite*r;
+                    ng = ((1.0-forme_struct->opacite)*getg(getpixel(buffer,i,j)))+forme_struct->opacite*g;
+                    nb = ((1.0-forme_struct->opacite)*getb(getpixel(buffer,i,j)))+forme_struct->opacite*b;
+                    putpixel(buffer,i,j,makecol(nr,ng,nb));
+
+                }
+            }
+            int re=255,be=255,ce=255;
+
+            textprintf_ex(buffer,font,x_text,y+12,makecol(re,be,ce),-1,"%s",forme_struct->texte);
+
+            if(temp->popup_st==1)
+            {
+                if(temp->popup->temps_init+temp->popup->temps<=i)temp->popup_st=0;
+            }
+            if(temp->popup_st==1)send_popup(file,forme_struct->texte,temp->popup->temps,x,y,r,g,b,temp->popup->temps_init);
+
+
+        }
+        else if(temp->element!=NULL&&buffer!=NULL&&temp->ordre>0&&temp->ordre<11)
+        {
+
+            if(file->zoom>1.0&&file->zoom<=3.0&&temp->zoom!=0)
+            {
+
+                temp->element=redimentioner(temp->element,temp->element->w*file->zoom,temp->element->h*file->zoom);
+            }
+            masked_blit(temp->element, buffer, 0, 0, temp->x*plateau->taille_carreau-x_marge-file->x, temp->y*plateau->taille_carreau-y_marge-file->y, SCREEN_W, SCREEN_H);
+            //destroy_bitmap(temp->element);
+            //free(temp);
+        }
+        else if(temp->element!=NULL&&buffer!=NULL&&temp->ordre==0)
+        {
+
+            if(file->zoom>1&&file->zoom<=3&&temp->zoom!=0)
+            {
+
+                temp->element=redimentioner(temp->element,temp->element->w*file->zoom,temp->element->h*file->zoom);
+
+            }
+            blit(temp->element, buffer, x_marge+file->x, y_marge+file->y, temp->x*plateau->taille_carreau, temp->y*plateau->taille_carreau, SCREEN_W, SCREEN_H);
+            //destroy_bitmap(temp->element);
+            //free(temp);
+        }
+        else if(temp->element!=NULL&&buffer!=NULL&&temp->ordre==11)
+        {
+
+
+            masked_blit(temp->element, buffer,0 , 0, mouse_x,mouse_y, SCREEN_W, SCREEN_H);
+            //destroy_bitmap(temp->element);
+            //free(temp);
+        }
+        //taille = file->taille;
+
+        //free(temp);
+    }
+
+    show_mouse(buffer);
+    plateau->taille_carreau = TAILLE_CARREAU;
+}
+
+
+
+
+void text_box(t_file_element_a* file,char* text,int x,int y,int r,int g,int b,float opacite)
+{
+    int taille ;
+    taille = 8* (int)strlen(text);
+    t_forme* carre = (t_forme*)malloc(sizeof(t_forme));
+    t_element_affichage* temp = (t_element_affichage*)malloc(sizeof(t_element_affichage));
+    carre->x1 = x;
+    carre->y1 = y;
+    carre->x2 = x+taille+taille;
+    carre->y2 = y+28;
+    carre->opacite = opacite;
+    carre->texte = text;
+    carre->x_text = (2*x+taille)/2;
+    carre->r = r;
+    carre->g = g;
+    carre->b = b;
+
+    temp = creer_element_a(NULL,x,y,10,0,1,carre,0,NULL);
+    temp->forme_struct = carre;
+    enfiler_element_a(temp,file);
+
+}
+
+
+void curseur(t_file_element_a* file,BITMAP* bmp)
+{
+    afficher(file,bmp,0,0,11);
+}
+
+
+
+int bouton(t_file_element_a* file,t_stat* statut,char* texte,int x ,int y,int r,int g,int b)
+{
+    int retour;
+    if(mouse_x>x && mouse_x<x+20*strlen(texte) && mouse_y>y && mouse_y<y+28)
+    {
+        text_box(file,texte,x,y,r,g,b,1.0);
+        if(stat(mouse_b,statut))return 1;
+    }
+    else
+    {
+        text_box(file,texte,x,y,r,g,b,0.8);
+        return 0;
+    }
+}
+
+int stat(int entree,t_stat* statut)
+{
+
+        if(entree==1&&statut->bouton1==0)
+        {
+            statut->bouton1 = 1;
+        }
+        if(entree==0&&statut->bouton1==1)
+        {
+            statut->bouton1 = 0;
+            return 1;
+        }
+        return 0;
+
+}
+
+
+
+
+void send_popup(t_file_element_a* file,char* text,int temps,int x,int y,int r,int g,int b,int i)
+{
+    int taille ;
+    taille = 8* (int)strlen(text);
+    t_forme* carre = (t_forme*)malloc(sizeof(t_forme));
+    t_element_affichage* temp = (t_element_affichage*)malloc(sizeof(t_element_affichage));
+    carre->x1 = x;
+    carre->y1 = y;
+    carre->x2 = x+taille+taille;
+    carre->y2 = y+28;
+    carre->opacite = 0;
+    carre->texte = text;
+    carre->x_text = (2*x+taille)/2;
+    carre->r = r;
+    carre->g = g;
+    carre->b = b;
+    //temp->popup_st = 1;
+    t_popup* popup = (t_popup*)malloc(sizeof(t_popup));
+    popup->temps_init = i;
+    popup->temps = temps;
+    temp = creer_element_a(NULL,x,y,11,0,1,carre,1,popup);
+    //temp->forme_struct = carre;
+    enfiler_element_a(temp,file);
+
+}
+
+
+//
+// Created by User on 26/10/2022.
+//
