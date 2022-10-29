@@ -1,0 +1,119 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "allegro.h"
+#define W 900
+#define H 700
+#define NB_CARREAU_X 45
+#define NB_CARREAU_Y 35
+#define TAILLE_CARREAU 20
+
+
+
+//
+// Created by User on 24/10/2022.
+//
+
+#ifndef PROJET_INFO_3_HEADER_INIT_H
+#define PROJET_INFO_3_HEADER_INIT_H
+
+typedef struct forme
+{
+    int x1;
+    int y1;
+    int x2;
+    int y2;
+    int x_text;
+    char* texte;
+    int r,g,b;
+    float opacite;
+}t_forme;
+
+typedef struct popup
+{
+    int temps_init;
+    int temps;
+}t_popup;
+
+typedef struct element
+{
+    BITMAP* element;
+    int ordre;
+    int x;
+    int y;
+    int zoom;
+    int forme;
+    t_forme* forme_struct;
+    struct element* suivant;
+    int popup_st;
+    t_popup* popup;
+}t_element_affichage;
+
+typedef struct file_element_a
+{
+    t_element_affichage* queue;
+    t_element_affichage* tete;
+    int taille;
+    int x;
+    int y;
+    int zoom;
+}t_file_element_a;
+
+
+
+typedef struct carreaux
+{
+    int x;
+    int y;
+    int taille_x;
+    int taille_y;
+}t_carreau;
+
+typedef struct plateau
+{
+    int taille_carreau;
+    t_carreau** carreaux;
+}t_plateau;
+
+typedef struct statut
+{
+    int bouton1;
+    int bouton2;
+
+
+}t_stat;
+
+
+void alleg_init();
+
+BITMAP* redimentioner(BITMAP* image,int x ,int y);
+
+t_element_affichage* creer_element_a(BITMAP* btm,int x,int y,int ordre,int zoom,int forme,t_forme* forme_struct,int pop,t_popup* popup);
+void enfiler_element_a(t_element_affichage* maillon,t_file_element_a* file);
+
+t_element_affichage* defiler_element_a(t_file_element_a* file);
+
+void trie_file(t_file_element_a* file);
+
+void afficher(t_file_element_a* file,BITMAP* btm,int x, int y,int ordre);
+
+void affi_file(t_plateau* plateau,t_stat* statut,t_file_element_a* file,BITMAP* buffer,int i);
+
+void init_file_affichage(t_file_element_a* file);
+
+t_plateau* init_plateau();
+
+void text_box(t_file_element_a* file,char* text,int x,int y,int r,int g,int b,float opacite);
+
+void curseur(t_file_element_a* file,BITMAP* bmp);
+
+
+int bouton(t_file_element_a* file,t_stat* statut,char* texte,int x ,int y,int r,int g,int b);
+
+void init_stat(t_stat* stat);
+
+int stat(int entree,t_stat * stat);
+
+void send_popup(t_file_element_a* file,char* text,int temps,int x,int y,int r,int g,int b,int i);
+
+void popup(t_file_element_a* file,char* text,int temps,int x,int y,int r,int g,int b,int i);
+#endif //PROJET_INFO_3_HEADER_INIT_H
